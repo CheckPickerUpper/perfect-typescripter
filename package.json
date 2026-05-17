@@ -1,0 +1,25 @@
+{
+  "name": "perfect-typescripter",
+  "version": "1.38.3",
+  "private": true,
+  "description": "Claude Code plugin + bundled ESLint plugin enforcing Rust-style discipline on TypeScript. The npm-publishable package is in ./eslint-plugin.",
+  "license": "MIT",
+  "author": "ChequePickerUpper",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ChequePickerUpper/perfect-typescripter.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ChequePickerUpper/perfect-typescripter/issues"
+  },
+  "homepage": "https://github.com/ChequePickerUpper/perfect-typescripter#readme",
+  "scripts": {
+    "test": "node test/typescript_guard.test.js && node test/phantom_type_params.test.js && node test/why-tag-guard.test.js",
+    "test:typescript-guard": "node test/typescript_guard.test.js",
+    "test:phantom-type-params": "node test/phantom_type_params.test.js",
+    "test:why-tag-guard": "node test/why-tag-guard.test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
