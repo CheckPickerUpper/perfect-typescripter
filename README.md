@@ -1,7 +1,7 @@
 # Perfect TypeScripter
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://github.com/ChequePickerUpper/perfect-typescripter/actions/workflows/test.yml/badge.svg)](https://github.com/ChequePickerUpper/perfect-typescripter/actions/workflows/test.yml)
+[![Tests](https://github.com/CheckPickerUpper/perfect-typescripter/actions/workflows/test.yml/badge.svg)](https://github.com/CheckPickerUpper/perfect-typescripter/actions/workflows/test.yml)
 
 Rust-style discipline for TypeScript: bans `null`, `undefined`, optional fields, booleans-as-domain-state, `any`, `unknown`, positional args (>1), string widening, phantom type parameters, degenerate comparators, missing `@why` tags on exports, and several other shapes that compile but rot in production. Forces discriminated unions and exhaustive `switch` everywhere domain state lives.
 
@@ -49,7 +49,7 @@ The correct shape in each case is a discriminated union with a `Kind` field and 
 ### Claude Code plugin
 
 ```bash
-git clone https://github.com/ChequePickerUpper/perfect-typescripter.git ~/perfect-typescripter
+git clone https://github.com/CheckPickerUpper/perfect-typescripter.git ~/perfect-typescripter
 claude plugin marketplace add ~/perfect-typescripter
 claude plugin install perfect-typescripter@perfect-typescripter --scope user
 ```
