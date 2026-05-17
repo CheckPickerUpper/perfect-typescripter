@@ -1,0 +1,44 @@
+{
+  "description": "Enforces Rust-style TS: bans optionals, booleans, null, undefined, any, unknown, type assertions, enums. Forces discriminated unions everywhere. Also enforces a WHY-not-WHAT @why tag on every exported function.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/ts-rules-inject.js",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/config_write_guard.js",
+            "timeout": 5
+          }
+        ],
+        "matcher": "Edit|Write|MultiEdit|mcp__filesystem__write_file|mcp__filesystem__edit_file|mcp__serena__replace_symbol_body|mcp__serena__insert_after_symbol|mcp__serena__insert_before_symbol|mcp__serena__replace_content"
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/typescript_guard.js",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/why_tag_guard.js",
+            "timeout": 5
+          }
+        ],
+        "matcher": "Edit|Write|MultiEdit|mcp__filesystem__write_file|mcp__filesystem__edit_file|mcp__serena__replace_symbol_body|mcp__serena__insert_after_symbol|mcp__serena__insert_before_symbol|mcp__serena__replace_content"
+      }
+    ]
+  }
+}

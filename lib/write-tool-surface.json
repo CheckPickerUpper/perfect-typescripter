@@ -1,0 +1,48 @@
+{
+  "_doc": "Canonical declarative list of write-tool surfaces across every AI client. Single source for: Claude Code per-plugin hooks.json matchers, Codex compiler matcher + runtime translator, OpenCode compiler matcher + runtime translator, and the JS hook-input-parser normalizer. Adding a new MCP write surface = one entry here + regen pass; nothing else should ever hand-list write tools.",
+  "builtin": [
+    "Edit",
+    "Write",
+    "MultiEdit"
+  ],
+  "mcp": [
+    {
+      "name": "mcp__filesystem__write_file",
+      "kind": "Write",
+      "path_field": "path",
+      "content_field": "content"
+    },
+    {
+      "name": "mcp__filesystem__edit_file",
+      "kind": "MultiEdit",
+      "path_field": "path",
+      "edits_field": "edits",
+      "edit_old_field": "oldText",
+      "edit_new_field": "newText"
+    },
+    {
+      "name": "mcp__serena__replace_symbol_body",
+      "kind": "Edit",
+      "path_field": "relative_path",
+      "new_string_field": "body"
+    },
+    {
+      "name": "mcp__serena__insert_after_symbol",
+      "kind": "Edit",
+      "path_field": "relative_path",
+      "new_string_field": "body"
+    },
+    {
+      "name": "mcp__serena__insert_before_symbol",
+      "kind": "Edit",
+      "path_field": "relative_path",
+      "new_string_field": "body"
+    },
+    {
+      "name": "mcp__serena__replace_content",
+      "kind": "Write",
+      "path_field": "relative_path",
+      "content_field": "content"
+    }
+  ]
+}

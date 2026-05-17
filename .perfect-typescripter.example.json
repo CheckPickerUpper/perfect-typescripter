@@ -1,0 +1,49 @@
+{
+  "$schema": "Perfect TypeScripter Configuration",
+  "rules": {
+    "booleans": {
+      "enabled": true,
+      "exemptions": {
+        "fieldNames": [],
+        "typeNames": ["ComponentProps", "ReactNode"],
+        "tsxFiles": true,
+        "privateFunctions": true
+      }
+    },
+    "positionalArgs": {
+      "enabled": true,
+      "exemptPrivateFunctions": true
+    },
+    "nullUndefined": {
+      "enabled": true,
+      "exemptions": {
+        "allowedDirectories": ["src/Shared/Client/UI/State"]
+      }
+    },
+    "optionals": { "enabled": true },
+    "anyUnknown": { "enabled": true },
+    "typeAssertions": {
+      "enabled": true,
+      "allowConst": true,
+      "allowBrandedTypes": true
+    },
+    "enums": { "enabled": true },
+    "exhaustiveSwitches": { "enabled": true },
+    "indexAccess": { "enabled": true },
+    "resultPatterns": {
+      "enabled": true,
+      "bannedNames": ["Success", "Failed", "Ok", "Error"]
+    },
+    "ifOnField": {
+      "enabled": true,
+      "suspiciousNames": []
+    }
+  },
+  "projectOverrides": {
+    "exemptFunctions": ["_privateHelper", "_internalCache"],
+    "exemptTypes": ["LegacyConfig"],
+    "reason": "Migration in progress - will fix in v2.0",
+    "approved_by": "Tech Lead",
+    "approved_date": "2026-03-06"
+  }
+}

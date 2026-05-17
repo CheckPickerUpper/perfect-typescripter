@@ -1,0 +1,22 @@
+{
+  "rules": {
+    "booleanFields":      { "enabled": true, "exemptions": { "fieldNames": [], "typeNames": [], "tsxFiles": true } },
+    "booleanParams":      { "enabled": true, "exemptions": { "privateFunctions": true } },
+    "booleanReturns":     { "enabled": true },
+    "nullUndefined":      { "enabled": true },
+    "optionalProperties": { "enabled": true },
+    "optionalChaining":   { "enabled": true },
+    "anyUnknown":         { "enabled": true },
+    "typeAssertions":     { "enabled": true, "allowConst": true, "allowBrandedTypes": true },
+    "stringWidening":     { "enabled": true, "exemptions": { "commentTag": "@why widen" } },
+    "doubleBang":         { "enabled": true },
+    "enums":              { "enabled": true },
+    "exhaustiveSwitches": { "enabled": true },
+    "fallthroughGrouping": { "enabled": true },
+    "stateBranching":     { "enabled": true, "exemptions": { "allowedFiles": [], "allowedDirectories": [] } },
+    "resultPatterns":     { "enabled": true, "bannedNames": ["Success", "Failed", "IsSuccess", "IsFailed", "Ok", "Error", "IsError", "IsValid", "IsOk"] },
+    "ifOnField":          { "enabled": true, "suspiciousNames": [] },
+    "positionalArgs":     { "enabled": true, "exemptPrivateFunctions": true },
+    "phantomTypeParams":  { "enabled": true, "exemptions": { "typeParamNames": [], "commentTag": "@why phantom" } }
+  }
+}

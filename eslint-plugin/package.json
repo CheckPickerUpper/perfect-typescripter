@@ -1,0 +1,35 @@
+{
+  "name": "eslint-plugin-perfect-typescripter",
+  "version": "1.33.0",
+  "description": "Cross-file ESLint rules for discriminated-union hygiene: phantom type parameters, duplicate envelope shapes, shared variant literals across DUs, and variant prefix drift. Bundled inside the perfect-typescripter Claude Code plugin and installed into a project by the /setup-eslint command.",
+  "main": "index.js",
+  "files": [
+    "index.js",
+    "rules"
+  ],
+  "keywords": [
+    "eslint",
+    "eslintplugin",
+    "typescript",
+    "discriminated-union",
+    "type-safety"
+  ],
+  "peerDependencies": {
+    "eslint": ">=8.0.0",
+    "@typescript-eslint/parser": ">=6.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "author": "ChequePickerUpper",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ChequePickerUpper/perfect-typescripter.git",
+    "directory": "eslint-plugin"
+  },
+  "bugs": {
+    "url": "https://github.com/ChequePickerUpper/perfect-typescripter/issues"
+  },
+  "homepage": "https://github.com/ChequePickerUpper/perfect-typescripter#readme"
+}
