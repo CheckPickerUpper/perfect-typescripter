@@ -1,0 +1,21 @@
+{
+  "name": "perfect-typescripter",
+  "owner": {
+    "name": "CheckPickerUpper",
+    "url": "https://github.com/CheckPickerUpper"
+  },
+  "metadata": {
+    "description": "Rust-style discipline for TypeScript. Claude Code plugin with PreToolUse Write/Edit hooks plus a bundled ESLint plugin for cross-file rules.",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "perfect-typescripter",
+      "source": ".",
+      "description": "Bans null/undefined/optionals/booleans-as-state/any/unknown/positional-args/string-widening/phantom-type-params/degenerate-comparators in TypeScript. Forces discriminated unions and exhaustive switches everywhere domain state lives.",
+      "version": "1.38.3",
+      "category": "language",
+      "tags": ["typescript", "linting", "discriminated-unions", "type-safety", "rust-style"]
+    }
+  ]
+}

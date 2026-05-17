@@ -46,7 +46,25 @@ The correct shape in each case is a discriminated union with a `Kind` field and 
 
 ## Install
 
-### Claude Code plugin
+This repo ships **four installable surfaces**. Pick the one that matches your agent runtime; the underlying rules and skills are the same source.
+
+| Surface | Status | Command |
+|---|---|---|
+| Claude Code (plugin marketplace) | ✅ ready | `claude plugin marketplace add https://github.com/CheckPickerUpper/perfect-typescripter && claude plugin install perfect-typescripter@perfect-typescripter --scope user` |
+| Skills CLI (skills.sh / `npx skills`) | ✅ ready | `npx skills add CheckPickerUpper/perfect-typescripter` |
+| npm (ESLint plugin only) | 🚧 not yet published | (planned: `npm install --save-dev eslint-plugin-perfect-typescripter` after first release) |
+| Codex CLI / OpenCode | ❌ not yet shipped standalone | Codex- and OpenCode-flavored build artifacts depend on a separate compiler; today they are only built inside the upstream monorepo. PRs welcome. |
+
+### Claude Code (plugin marketplace)
+
+The repo doubles as a single-plugin marketplace via `.claude-plugin/marketplace.json` + `.claude-plugin/plugin.json`. Install in one step:
+
+```bash
+claude plugin marketplace add https://github.com/CheckPickerUpper/perfect-typescripter
+claude plugin install perfect-typescripter@perfect-typescripter --scope user
+```
+
+Or from a local clone:
 
 ```bash
 git clone https://github.com/CheckPickerUpper/perfect-typescripter.git ~/perfect-typescripter
@@ -68,9 +86,29 @@ Optional per-project config at `.claude/ai-lab/perfect-typescripter/config.json`
 
 No config = every rule on, no exemptions. Full key reference in [`docs/RULES.md`](docs/RULES.md#configuration).
 
-### ESLint plugin
+### Skills CLI
 
-After the first GitHub release the npm package will be installable directly:
+The three skills under `skills/` (`typescript-rules`, `setup-typescripter-config`, `setup-eslint-integration`) are standards-compliant Agent Skills (lowercase-kebab name matching parent dir, required `name` + `description` in frontmatter). Install via the `skills` CLI for any agent runtime that reads SKILL.md (Cursor, Cline, codename Skills consumers, etc.):
+
+```bash
+# All three skills, project scope
+npx skills add CheckPickerUpper/perfect-typescripter
+
+# Global scope (across all projects on this user)
+npx skills add -g CheckPickerUpper/perfect-typescripter
+
+# Just one specific skill
+npx skills add CheckPickerUpper/perfect-typescripter --skill typescript-rules
+
+# List skills in the repo without installing
+npx skills add CheckPickerUpper/perfect-typescripter --list
+```
+
+⚠️ The skills install activation context only; they do not install the PreToolUse hooks. If you want the *write-time blocking* behavior, use the Claude Code marketplace install above. Use the skills CLI when you want the rule documentation loaded into a non-Claude-Code agent that respects SKILL.md frontmatter.
+
+### ESLint plugin (the cross-file rules)
+
+The cross-file rules ship as a sibling npm package, [`eslint-plugin-perfect-typescripter`](./eslint-plugin/). After the first npm release:
 
 ```bash
 npm install --save-dev eslint-plugin-perfect-typescripter
@@ -79,10 +117,11 @@ npm install --save-dev eslint-plugin-perfect-typescripter
 Until then, install via `file:` protocol against a clone:
 
 ```bash
-npm install --save-dev file:./path/to/perfect-typescripter/eslint-plugin
+git clone https://github.com/CheckPickerUpper/perfect-typescripter.git
+npm install --save-dev file:./perfect-typescripter/eslint-plugin
 ```
 
-Or wire the whole integration (parser, config, husky + lint-staged pre-commit) automatically from inside Claude Code with `/setup-eslint`; that command lives in the Claude Code plugin and detects your package manager, existing ESLint config style, and current pre-commit setup, then scaffolds what is missing.
+Or wire the whole integration (parser, config, husky + lint-staged pre-commit) automatically from inside Claude Code with `/setup-eslint`; that command detects your package manager, existing ESLint config style, and current pre-commit setup, then scaffolds what is missing.
 
 Flat config:
 
@@ -117,6 +156,13 @@ Legacy `.eslintrc.json`:
   }
 }
 ```
+
+### Codex CLI / OpenCode
+
+Standalone install for Codex CLI and OpenCode is not yet shipped from this repo. Those runtimes need generated adapter artifacts (`.codex-plugin/plugin.json`, `.generated/codex/*`, OpenCode bundle) that today are produced by a separate compiler step inside the upstream monorepo this plugin was extracted from. Two paths forward, depending on demand:
+
+- **Open a GitHub issue** describing your runtime + use case. Concrete demand makes it easier to prioritise porting the compiler.
+- **Contribute the port**. The compiler is a single Node script that lowers `hooks/hooks.json` into Codex's hook shape and the OpenCode bridge runtime. PRs are welcome; see [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## Run the tests
 
