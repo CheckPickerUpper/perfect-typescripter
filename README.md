@@ -52,7 +52,7 @@ This repo ships **four installable surfaces**. Pick the one that matches your ag
 |---|---|---|
 | Claude Code (plugin marketplace) | ✅ ready | `claude plugin marketplace add https://github.com/CheckPickerUpper/perfect-typescripter && claude plugin install perfect-typescripter@perfect-typescripter --scope user` |
 | Codex CLI | ✅ ready | `git clone https://github.com/CheckPickerUpper/perfect-typescripter ~/.codex/plugins/cache/perfect-typescripter/perfect-typescripter/local` (Codex auto-discovers `.codex-plugin/plugin.json`) |
-| OpenCode | ✅ ready | `git clone https://github.com/CheckPickerUpper/perfect-typescripter && python3 perfect-typescripter/.opencode/install.py` |
+| OpenCode | ✅ ready | Clone, then add `"file:///.../.opencode/perfect-typescripter-opencode-bundle.js"` to `opencode.json` `plugin` array (or drop into `~/.config/opencode/plugins/`). See [OpenCode](#opencode) below. |
 | Skills CLI (skills.sh / `npx skills`) | ✅ ready | `npx skills add CheckPickerUpper/perfect-typescripter` |
 | npm (ESLint plugin only) | 🚧 not yet published | (planned: `npm install --save-dev eslint-plugin-perfect-typescripter` after first release) |
 
@@ -174,21 +174,53 @@ The pre-built artifacts live under `.generated/codex/`; they are checked in (un-
 
 ### OpenCode
 
-OpenCode plugins live in `~/.config/opencode/plugins/`. The repo ships an installer that symlinks the bundle and skills into place:
+The plugin ships a canonical OpenCode plugin module at `.opencode/perfect-typescripter-opencode-bundle.js` (exports `PerfectTypescripterOpencodeBundle`, returns `tool.execute.before` / `tool.execute.after` hook handlers). Three install paths per the [official OpenCode plugin docs](https://opencode.ai/docs/plugins/):
+
+**1. Declare in `opencode.json` (recommended, no install step, version-pinnable in your repo).** From a clone:
 
 ```bash
-git clone https://github.com/CheckPickerUpper/perfect-typescripter
-python3 perfect-typescripter/.opencode/install.py
+git clone https://github.com/CheckPickerUpper/perfect-typescripter ~/perfect-typescripter
 ```
 
-Flags:
+Then add to your project or global `opencode.json`:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": [
+    "file:///home/you/perfect-typescripter/.opencode/perfect-typescripter-opencode-bundle.js"
+  ]
+}
+```
+
+OpenCode auto-loads the plugin on the next session.
+
+**2. Drop the file into `~/.config/opencode/plugins/`** (the documented global plugin dir):
 
 ```bash
-python3 perfect-typescripter/.opencode/install.py --dry-run        # preview
-python3 perfect-typescripter/.opencode/install.py --mode copy      # copy instead of symlink (Windows)
+git clone https://github.com/CheckPickerUpper/perfect-typescripter ~/perfect-typescripter
+mkdir -p ~/.config/opencode/plugins
+ln -s ~/perfect-typescripter/.opencode/perfect-typescripter-opencode-bundle.js \
+      ~/.config/opencode/plugins/perfect-typescripter.js
 ```
 
-The OpenCode bundle uses `fs.realpathSync` to follow the symlink back to the source tree, so the canonical `hooks/*.js` always run from the cloned repo. Updates land via `git pull` from the clone.
+`.opencode/perfect-typescripter-opencode-bundle.js` uses `fs.realpathSync` to follow the symlink back to the source tree, so the canonical `hooks/*.js` always run from your clone. `git pull` to update.
+
+**3. Skills and agents (optional batch installer).** The bundle handles per-write blocking, but `skills/` and `agents/` need to land under `~/.config/opencode/skills/` and `~/.config/opencode/agent/` to give the agent context-on-demand. The repo ships a one-shot installer that does #2 plus skills + agents in one pass:
+
+```bash
+python3 ~/perfect-typescripter/.opencode/install.py             # symlink everything
+python3 ~/perfect-typescripter/.opencode/install.py --dry-run   # preview
+python3 ~/perfect-typescripter/.opencode/install.py --mode copy # copy instead of symlink (Windows)
+```
+
+**4. npm (planned).** After the first npm release the install will collapse to:
+
+```bash
+opencode plugin perfect-typescripter
+```
+
+which writes the entry into `opencode.json` and pulls from npm automatically.
 
 ## Run the tests
 
