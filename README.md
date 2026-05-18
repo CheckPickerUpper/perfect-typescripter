@@ -3,16 +3,63 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Tests](https://github.com/CheckPickerUpper/perfect-typescripter/actions/workflows/test.yml/badge.svg)](https://github.com/CheckPickerUpper/perfect-typescripter/actions/workflows/test.yml)
 
-Rust-style discipline for TypeScript: bans `null`, `undefined`, optional fields, booleans-as-domain-state, `any`, `unknown`, positional args (>1), string widening, phantom type parameters, degenerate comparators, missing `@why` tags on exports, and several other shapes that compile but rot in production. Forces discriminated unions and exhaustive `switch` everywhere domain state lives.
+Rust-style discipline for TypeScript. Bans `null`, `undefined`, optional fields, booleans-as-domain-state, `any`, `unknown`, positional args (>1), string widening, phantom type parameters, degenerate comparators, missing `@why` tags on exports, and other shapes that compile but rot in production. Forces discriminated unions and exhaustive `switch` everywhere domain state lives.
 
-It ships as **two artifacts** so you get both per-keystroke prevention and project-wide auditing:
+## Quickstart
 
-| Artifact | What it does | Where it lives |
+Pick your runtime, run the one-liner, done.
+
+### Claude Code
+
+```bash
+claude plugin marketplace add https://github.com/CheckPickerUpper/perfect-typescripter
+claude plugin install perfect-typescripter@perfect-typescripter --scope user
+```
+
+### Codex CLI
+
+```bash
+git clone https://github.com/CheckPickerUpper/perfect-typescripter \
+  ~/.codex/plugins/cache/perfect-typescripter/perfect-typescripter/local
+```
+
+### OpenCode
+
+```bash
+git clone https://github.com/CheckPickerUpper/perfect-typescripter ~/perfect-typescripter
+```
+
+Then add to your `opencode.json`:
+
+```json
+{ "plugin": ["file:///home/you/perfect-typescripter/.opencode/perfect-typescripter-opencode-bundle.js"] }
+```
+
+### Skills CLI (any SKILL.md consumer: Cursor, Cline, etc.)
+
+```bash
+npx skills add CheckPickerUpper/perfect-typescripter
+```
+
+### ESLint plugin (cross-file rules)
+
+```bash
+git clone https://github.com/CheckPickerUpper/perfect-typescripter
+npm install --save-dev file:./perfect-typescripter/eslint-plugin
+```
+
+Or run `/setup-eslint` inside Claude Code to scaffold ESLint config, parser, and pre-commit in one pass.
+
+For full per-surface install detail (project config, custom flags, npm-publish status), jump to [Install (full)](#install-full).
+
+## What you get
+
+| Artifact | Catches | Where it lives |
 |---|---|---|
-| Claude Code plugin | PreToolUse `Write`/`Edit` hooks that block the bad shapes before they land on disk. SessionStart hook that injects the rule headline into every conversation. Skills, agent, and `/setup-eslint` slash command. | this repo's root |
-| `eslint-plugin-perfect-typescripter` | Four cross-file rules the per-file hook cannot see: phantom type params, duplicate envelope shapes, shared variant literals across discriminated unions, variant prefix drift. | [`./eslint-plugin/`](./eslint-plugin/) |
+| Claude Code / Codex / OpenCode plugin | *The file you are writing*. PreToolUse `Write` / `Edit` hooks block the bad shapes before they land on disk. | this repo's root |
+| `eslint-plugin-perfect-typescripter` | *Patterns that span files*: phantom type params, duplicate envelope shapes, shared variant literals across discriminated unions, variant prefix drift. | [`./eslint-plugin/`](./eslint-plugin/) |
 
-The Claude Code plugin catches *the file you are writing*. The ESLint plugin catches *patterns that span files*. Together they close the per-file / cross-file gap.
+Per-file hook plus cross-file ESLint closes the gap that either alone leaves open.
 
 ## What gets blocked
 
@@ -44,11 +91,11 @@ function isSameTransition(prev: Slot, next: Slot): boolean { ... }
 
 The correct shape in each case is a discriminated union with a `Kind` field and an exhaustive `switch`. See [`docs/RULES.md`](docs/RULES.md) for the rewrite of each example.
 
-## Install
+## Install (full)
 
-This repo ships **four installable surfaces**. Pick the one that matches your agent runtime; the underlying rules and skills are the same source.
+The quickstart above gets you running. This section spells out per-surface options (project config, override flags, npm-publish status, etc) for users who need them.
 
-| Surface | Status | Command |
+| Surface | Status | Quickstart command |
 |---|---|---|
 | Claude Code (plugin marketplace) | ✅ ready | `claude plugin marketplace add https://github.com/CheckPickerUpper/perfect-typescripter && claude plugin install perfect-typescripter@perfect-typescripter --scope user` |
 | Codex CLI | ✅ ready | `git clone https://github.com/CheckPickerUpper/perfect-typescripter ~/.codex/plugins/cache/perfect-typescripter/perfect-typescripter/local` (Codex auto-discovers `.codex-plugin/plugin.json`) |
