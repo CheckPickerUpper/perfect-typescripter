@@ -1,0 +1,29 @@
+{
+  "description": "Enforces Rust-style TS: bans optionals, booleans, null, undefined, any, unknown, type assertions, enums. Forces discriminated unions everywhere. Also enforces a WHY-not-WHAT @why tag on every exported function.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const fs=require('fs');const nodePath=require('path');const plugin='perfect-typescripter';const rel=nodePath.join('.generated','codex','session_start.js');const roots=[process.env.CODEX_PLUGIN_ROOT,process.env.CLAUDE_PLUGIN_ROOT];const home=process.env.HOME||process.env.USERPROFILE;if(home){const cache=nodePath.join(home,'.codex','plugins','cache');if(fs.existsSync(cache)){for(const marketplace of fs.readdirSync(cache).sort()){roots.push(nodePath.join(cache,marketplace,plugin,'local'));}}}let found=false;for(const root of roots){if(!root)continue;const script=nodePath.join(root,rel);if(fs.existsSync(script)){found=true;require(script);break;}}if(found)process.exit(0);process.stdout.write(JSON.stringify({systemMessage:'['+plugin+'] Codex hook runtime not found; hook skipped.'})+'\\\\n');process.exit(0);\"",
+            "timeout": 7
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "apply_patch|functions\\.apply_patch|Edit|Write|MultiEdit|mcp__filesystem__write_file|mcp__filesystem__edit_file|mcp__serena__replace_symbol_body|mcp__serena__insert_after_symbol|mcp__serena__insert_before_symbol|mcp__serena__replace_content",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const fs=require('fs');const nodePath=require('path');const plugin='perfect-typescripter';const rel=nodePath.join('.generated','codex','pre_tool_use.js');const roots=[process.env.CODEX_PLUGIN_ROOT,process.env.CLAUDE_PLUGIN_ROOT];const home=process.env.HOME||process.env.USERPROFILE;if(home){const cache=nodePath.join(home,'.codex','plugins','cache');if(fs.existsSync(cache)){for(const marketplace of fs.readdirSync(cache).sort()){roots.push(nodePath.join(cache,marketplace,plugin,'local'));}}}let found=false;for(const root of roots){if(!root)continue;const script=nodePath.join(root,rel);if(fs.existsSync(script)){found=true;require(script);break;}}if(found)process.exit(0);process.stdout.write(JSON.stringify({hookSpecificOutput:{hookEventName:'PreToolUse',permissionDecision:'deny',permissionDecisionReason:'['+plugin+'] perfect-typescripter Codex runtime not found; refusing to fail open.'}})+'\\\\n');process.exit(0);\"",
+            "timeout": 17
+          }
+        ]
+      }
+    ]
+  }
+}

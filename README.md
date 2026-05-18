@@ -51,9 +51,10 @@ This repo ships **four installable surfaces**. Pick the one that matches your ag
 | Surface | Status | Command |
 |---|---|---|
 | Claude Code (plugin marketplace) | ✅ ready | `claude plugin marketplace add https://github.com/CheckPickerUpper/perfect-typescripter && claude plugin install perfect-typescripter@perfect-typescripter --scope user` |
+| Codex CLI | ✅ ready | `git clone https://github.com/CheckPickerUpper/perfect-typescripter ~/.codex/plugins/cache/perfect-typescripter/perfect-typescripter/local` (Codex auto-discovers `.codex-plugin/plugin.json`) |
+| OpenCode | ✅ ready | `git clone https://github.com/CheckPickerUpper/perfect-typescripter && python3 perfect-typescripter/.opencode/install.py` |
 | Skills CLI (skills.sh / `npx skills`) | ✅ ready | `npx skills add CheckPickerUpper/perfect-typescripter` |
 | npm (ESLint plugin only) | 🚧 not yet published | (planned: `npm install --save-dev eslint-plugin-perfect-typescripter` after first release) |
-| Codex CLI / OpenCode | ❌ not yet shipped standalone | Codex- and OpenCode-flavored build artifacts depend on a separate compiler; today they are only built inside the upstream monorepo. PRs welcome. |
 
 ### Claude Code (plugin marketplace)
 
@@ -157,12 +158,37 @@ Legacy `.eslintrc.json`:
 }
 ```
 
-### Codex CLI / OpenCode
+### Codex CLI
 
-Standalone install for Codex CLI and OpenCode is not yet shipped from this repo. Those runtimes need generated adapter artifacts (`.codex-plugin/plugin.json`, `.generated/codex/*`, OpenCode bundle) that today are produced by a separate compiler step inside the upstream monorepo this plugin was extracted from. Two paths forward, depending on demand:
+The repo ships pre-built Codex artifacts under `.codex-plugin/plugin.json` + `.generated/codex/`. Codex auto-discovers any plugin whose source tree contains a `.codex-plugin/plugin.json` under its marketplace cache:
 
-- **Open a GitHub issue** describing your runtime + use case. Concrete demand makes it easier to prioritise porting the compiler.
-- **Contribute the port**. The compiler is a single Node script that lowers `hooks/hooks.json` into Codex's hook shape and the OpenCode bridge runtime. PRs are welcome; see [`CONTRIBUTING.md`](CONTRIBUTING.md).
+```bash
+mkdir -p ~/.codex/plugins/cache/perfect-typescripter/perfect-typescripter
+git clone https://github.com/CheckPickerUpper/perfect-typescripter \
+  ~/.codex/plugins/cache/perfect-typescripter/perfect-typescripter/local
+```
+
+Restart your Codex CLI session. The PreToolUse hook fires on `Edit`, `Write`, `MultiEdit`, and `apply_patch`; the SessionStart hook injects the rule headline.
+
+The pre-built artifacts live under `.generated/codex/`; they are checked in (un-gitignored) so installs work without a build step. Anyone changing the canonical hooks at `hooks/*.js` should rerun their preferred regeneration path (the upstream monorepo compiler today, a `tools/` script in the future); see [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+### OpenCode
+
+OpenCode plugins live in `~/.config/opencode/plugins/`. The repo ships an installer that symlinks the bundle and skills into place:
+
+```bash
+git clone https://github.com/CheckPickerUpper/perfect-typescripter
+python3 perfect-typescripter/.opencode/install.py
+```
+
+Flags:
+
+```bash
+python3 perfect-typescripter/.opencode/install.py --dry-run        # preview
+python3 perfect-typescripter/.opencode/install.py --mode copy      # copy instead of symlink (Windows)
+```
+
+The OpenCode bundle uses `fs.realpathSync` to follow the symlink back to the source tree, so the canonical `hooks/*.js` always run from the cloned repo. Updates land via `git pull` from the clone.
 
 ## Run the tests
 
