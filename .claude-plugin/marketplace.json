@@ -13,7 +13,7 @@
       "name": "perfect-typescripter",
       "source": ".",
       "description": "Bans null/undefined/optionals/booleans-as-state/any/unknown/positional-args/string-widening/phantom-type-params/degenerate-comparators in TypeScript. Forces discriminated unions and exhaustive switches everywhere domain state lives.",
-      "version": "1.38.3",
+      "version": "1.39.0",
       "category": "language",
       "tags": ["typescript", "linting", "discriminated-unions", "type-safety", "rust-style"]
     }

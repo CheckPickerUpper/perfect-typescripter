@@ -1,6 +1,6 @@
 {
   "name": "perfect-typescripter",
-  "version": "1.38.3",
+  "version": "1.39.0",
   "description": "Rust-style discipline for TypeScript: bans null/undefined/optionals/booleans-as-state/any/unknown/positional-args/string-widening/phantom-type-params/degenerate-comparators. Forces discriminated unions and exhaustive switches everywhere domain state lives. Per-file PreToolUse Write/Edit hooks plus SessionStart rule injection plus a bundled ESLint plugin for cross-file rules the per-file hook cannot see.",
   "author": {
     "name": "CheckPickerUpper",

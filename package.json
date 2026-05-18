@@ -1,6 +1,6 @@
 {
   "name": "perfect-typescripter",
-  "version": "1.38.3",
+  "version": "1.39.0",
   "private": true,
   "description": "Claude Code plugin + bundled ESLint plugin enforcing Rust-style discipline on TypeScript. The npm-publishable package is in ./eslint-plugin.",
   "license": "MIT",

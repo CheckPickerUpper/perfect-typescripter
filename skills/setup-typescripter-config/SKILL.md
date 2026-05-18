@@ -1,8 +1,8 @@
 ---
 name: setup-typescripter-config
-description: "Set up or edit .claude/ai-lab/perfect-typescripter/config.json to tune TypeScript enforcement rules. Use when the typescript guard blocks writes and the user wants to disable a rule, add exemptions, or configure the enforcer — or when the user says 'configure typescripter', 'disable boolean rule', 'add exemption', 'typescripter config'."
+description: "Set up or edit .claude/ai-lab/perfect-typescripter/config.json to tune TypeScript enforcement rules. Use when the typescript guard blocks writes and the user wants to disable a rule, add exemptions, or configure the enforcer, or when the user says 'configure typescripter', 'disable boolean rule', 'add exemption', 'typescripter config'."
 user-invocable: true
-allowed-tools: [Read, Write, Edit, Glob, Grep, AskUserQuestion]
+allowed-tools: [Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion]
 ---
 
 # Setup Typescripter Config
@@ -105,11 +105,37 @@ Common patterns:
 
 When the right config change isn't obvious, use AskUserQuestion. Present the candidate changes as options (e.g., "Disable rule X", "Add exemption for Y", "Exclude path Z"), mark the one that fixes the blocked write with the least enforcement loss as "(Recommended)", and describe for each option what TypeScript patterns it allows through and what correctness checks the user loses.
 
-## Step 3 — Write the config
+## Step 3 — Get explicit user approval (MANDATORY before write)
 
-Write `.claude/ai-lab/perfect-typescripter/config.json` at the project root. Only include rules that differ from defaults to keep the config minimal.
+Show the user the exact JSON you intend to write to `.claude/ai-lab/perfect-typescripter/config.json` and call AskUserQuestion. Frame it as a real decision: which rule is being relaxed, what bug class that rule prevents, and what the user loses by relaxing it. Options should be along the lines of "Apply this exact config (Recommended)", "Apply with a narrower exemption (specify what)", "Cancel and leave the config unchanged".
 
-## Step 4 — Verify (MANDATORY)
+Do NOT proceed to Step 4 unless the user picks an Apply option. If the user picks Cancel, stop and report.
+
+## Step 4 — Touch the approval marker (single-shot handshake)
+
+`config_write_guard.js` blocks every AI Write/Edit to the config by default. The skill bypasses that block by touching a 60-second-TTL marker in the same directory as the target. The marker is single-shot (the hook deletes it on first read), and the Bash tool is intentionally NOT matched by the guard, so this is the only path that gets through.
+
+Use Bash to create the marker. Both commands work; pick the one that fits the project's shell:
+
+```bash
+mkdir -p .claude/ai-lab/perfect-typescripter && touch .claude/ai-lab/perfect-typescripter/.config-write-approved
+```
+
+Or, if `touch` is unavailable on this platform:
+
+```bash
+mkdir -p .claude/ai-lab/perfect-typescripter && node -e "require('fs').writeFileSync('.claude/ai-lab/perfect-typescripter/.config-write-approved', '')"
+```
+
+The marker file must exist with a mtime fresher than 60 seconds when the Write fires. If the workflow stalls between Step 3 (AskUserQuestion approval) and Step 5 (the actual Write), redo Step 4 to refresh the marker.
+
+## Step 5 — Write the config
+
+Write `.claude/ai-lab/perfect-typescripter/config.json` at the project root. Only include rules that differ from defaults to keep the config minimal. The guard sees the fresh marker, deletes it, and lets the Write through.
+
+If the Write is denied with a `[perfect-typescripter] Refusing to edit enforcement config` message, the marker was either missing or stale. Redo Step 4 immediately before the Write retry. Never resort to a Bash heredoc that bypasses the guard entirely; that loses the user-approval handshake the guard is meant to enforce.
+
+## Step 6 — Verify (MANDATORY)
 
 This step is non-optional. Skipping it means a malformed config silently fails to load, and the user discovers the regression next time the guard fires unexpectedly.
 
