@@ -22,8 +22,10 @@ const noPhantomTypeParam = require('./rules/no-phantom-type-param.js');
 const noDuplicateEnvelopeShape = require('./rules/no-duplicate-envelope-shape.js');
 const noSharedVariantLiteralAcrossDiscriminatedUnions = require('./rules/no-shared-variant-literal-across-discriminated-unions.js');
 const noVariantPrefixDrift = require('./rules/no-variant-prefix-drift.js');
+const { version } = require('./package.json');
 
 module.exports = {
+  meta: { name: 'perfect-typescripter', version },
   rules: {
     'no-phantom-type-param': noPhantomTypeParam,
     'no-duplicate-envelope-shape': noDuplicateEnvelopeShape,

@@ -15,11 +15,11 @@
     "type-safety"
   ],
   "peerDependencies": {
-    "eslint": ">=8.0.0",
+    "eslint": ">=8.40.0",
     "@typescript-eslint/parser": ">=6.0.0"
   },
   "engines": {
-    "node": ">=18"
+    "node": "^20.19.0 || ^22.13.0 || >=24"
   },
   "license": "MIT",
   "author": "CheckPickerUpper",

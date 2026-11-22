@@ -50,7 +50,7 @@ module.exports = {
       if (!params || params.length === 0) return;
       if (!nameNode || !nameNode.name) return;
 
-      const sourceCode = context.getSourceCode();
+      const sourceCode = context.sourceCode;
       const declText = sourceCode.getText(node);
 
       for (const tp of params) {

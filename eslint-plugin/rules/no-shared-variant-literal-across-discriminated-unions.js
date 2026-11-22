@@ -60,7 +60,7 @@ module.exports = {
 
       if (!LITERAL_REGISTRY.has(value)) LITERAL_REGISTRY.set(value, []);
       const entries = LITERAL_REGISTRY.get(value);
-      const file = context.getFilename();
+      const file = context.filename;
       const line = node.loc ? node.loc.start.line : 0;
       const dedupeKey = `${file}:${owner}`;
       if (entries.some(e => `${e.file}:${e.owner}` === dedupeKey)) return;

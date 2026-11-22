@@ -63,7 +63,7 @@ module.exports = {
       if (!SUFFIX_REGISTRY.has(suffix)) SUFFIX_REGISTRY.set(suffix, new Map());
       const byPrefix = SUFFIX_REGISTRY.get(suffix);
 
-      const file = context.getFilename();
+      const file = context.filename;
       const line = node.loc ? node.loc.start.line : 0;
 
       if (!byPrefix.has(prefix)) byPrefix.set(prefix, []);

@@ -62,7 +62,7 @@ module.exports = {
 
       if (!SHAPE_REGISTRY.has(key)) SHAPE_REGISTRY.set(key, []);
       const entries = SHAPE_REGISTRY.get(key);
-      const file = context.getFilename();
+      const file = context.filename;
       const line = node.loc ? node.loc.start.line : 0;
 
       // Avoid double-recording the same node when the same file is
