@@ -31,4 +31,4 @@ The proactive skill auto-fires only when its heuristics match (TS project, no ES
 
 - Not in a Node project (no `package.json`). The agent will refuse and tell you.
 - Project explicitly does not run any linter, by team policy.
-- Project uses only Biome for lint and the team has agreed to that. The four cross-file rules have no Biome equivalent (Biome cannot access TypeScript AST cross-file), so wiring ESLint side-by-side adds a second linter the team did not sign up for.
+- Project uses only Biome for lint and the team has agreed to that. `/setup-eslint` would add a second linter.

@@ -1,7 +1,7 @@
 {
   "name": "eslint-plugin-perfect-typescripter",
   "version": "1.33.0",
-  "description": "Cross-file ESLint rules for discriminated-union hygiene: phantom type parameters, duplicate envelope shapes, shared variant literals across DUs, and variant prefix drift. Bundled inside the perfect-typescripter Claude Code plugin and installed into a project by the /setup-eslint command.",
+  "description": "Cross-file ESLint rules for discriminated-union hygiene: duplicate envelope shapes, shared variant literals across DUs, and variant prefix drift. Bundled inside the perfect-typescripter Claude Code plugin and installed into a project by the /setup-eslint command.",
   "main": "index.js",
   "files": [
     "index.js",

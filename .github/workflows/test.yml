@@ -48,7 +48,7 @@ jobs:
       - name: Verify eslint plugin loads
         run: |
           cd eslint-plugin
-          node -e "const p = require('./'); const rules = Object.keys(p.rules || {}); if (rules.length < 4) { console.error('Expected 4+ rules, got:', rules); process.exit(1); } console.log('Rules:', rules.join(', '));"
+          node -e "const p = require('./'); const rules = Object.keys(p.rules || {}); if (rules.length !== 3) { console.error('Expected 3 rules, got:', rules); process.exit(1); } console.log('Rules:', rules.join(', '));"
 
   bun-lint-plugin:
     name: Bun lint plugin

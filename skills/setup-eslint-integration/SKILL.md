@@ -1,6 +1,6 @@
 ---
 name: setup-eslint-integration
-description: "Set up ESLint integration for perfect-typescripter's four cross-file rules. Use when the user says 'set up linting', 'wire up eslint', 'how do I run the cross-file rules', 'set up perfect-typescripter for this project', 'install perfect-typescripter integration', or when a TS project (tsconfig.json or .ts files) has no eslint.config.* / .eslintrc.* in the project root."
+description: "Set up ESLint integration for perfect-typescripter's recommended cross-file rules. Use when the user says 'set up linting', 'wire up eslint', 'how do I run the cross-file rules', 'set up perfect-typescripter for this project', 'install perfect-typescripter integration', or when a TS project (tsconfig.json or .ts files) has no eslint.config.* / .eslintrc.* in the project root."
 user-invocable: false
 ---
 

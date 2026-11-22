@@ -238,7 +238,9 @@ type WorldStateRegistry<
 
 The detector strips comments and string literals before counting word-bounded occurrences of each param name in the declaration text (header through closing brace for interface / class / function, header through terminating semicolon for type alias). `=>` is skipped as a token so an arrow function type in a type alias RHS does not prematurely close the alias.
 
-Configurable via `rules.phantomTypeParams.exemptions.typeParamNames` for branded-phantom markers, or `// @why phantom` on the declaration line for one-off exemptions.
+Configurable via `rules.phantomTypeParams.exemptions.typeParamNames` for branded-phantom markers.
+
+For linting unused generic parameters, enable [`@typescript-eslint/no-unused-vars`](https://typescript-eslint.io/rules/no-unused-vars/). [Bun enables its built-in TypeScript `no-unused-vars` rule by default](https://bun.com/docs/lint#default-rules). With the TypeScript compiler, enable [`noUnusedParameters`](https://www.typescriptlang.org/tsconfig/noUnusedParameters.html) to catch unused type parameters, including those on exported declarations. [`noUnusedLocals`](https://www.typescriptlang.org/tsconfig/noUnusedLocals.html) checks unused local declarations.
 
 ### State Branching (v1.35.0)
 
@@ -693,14 +695,15 @@ if (result.status === "success") {
 
 ## Cross-file enforcement (v1.33.0)
 
-Three of the four critique classes that the per-file hook cannot see are shipped as a sibling ESLint plugin:
+The three rules that need declarations from multiple files ship in the sibling ESLint plugin:
 
 | Rule | What it catches |
 |------|-----------------|
-| `perfect-typescripter/no-phantom-type-param` | Mirror of the PreToolUse rule, but fires on human edits the hook does not see (editor save, pre-commit, CI). |
 | `perfect-typescripter/no-duplicate-envelope-shape` | N or more type aliases / interfaces with identical field sets. The fix is a generic envelope. |
 | `perfect-typescripter/no-shared-variant-literal-across-discriminated-unions` | Same string-literal variant (`"OwnerLeft"`) in N or more separate DUs. Extract a shared cause type so adding a new variant later is one line, not N. |
 | `perfect-typescripter/no-variant-prefix-drift` | Sibling DUs disagree on the prefix for the same operational suffix (`PlayerLeft` in one DU, `OwnerLeft` in another). Flagged for human resolution; the tool cannot pick the canonical name without a domain glossary. |
+
+Remove `perfect-typescripter/no-phantom-type-param` from existing ESLint configs. Use the [unused-parameter checks described above](#phantom-type-parameter-v1330) for linting; the write-time phantom parameter hook still applies to agent edits.
 
 ### Wire it into a project — proactive (default)
 
@@ -737,7 +740,6 @@ Cross-file rules are systematic only when ESLint runs in editor + pre-commit + C
 
 | Rule | Default severity |
 |------|------------------|
-| `no-phantom-type-param` | error |
 | `no-duplicate-envelope-shape` | warn |
 | `no-shared-variant-literal-across-discriminated-unions` | warn |
 | `no-variant-prefix-drift` | warn |
@@ -757,7 +759,7 @@ Override per project in your ESLint config.
 | `commands/setup-eslint.md` | Slash command `/setup-eslint`. Manual escape hatch that does the same thing as the agent. |
 | `agents/eslint-installer.md` | Subagent that runs the orchestrator, dry-runs first, applies, verifies with `npx eslint .`, reports with TANTO markers. Spawned by the `setup-eslint-integration` skill (proactive) or callable directly. |
 | `skills/setup-eslint-integration/SKILL.md` | Auto-loading skill. Fires when the project is TS, has no ESLint config, and the user has perfect-typescripter installed. Spawns the `eslint-installer` agent without asking, so cross-file rule wiring happens before drift accumulates. |
-| `eslint-plugin/` | Bundled-local ESLint plugin shipped via `file:` protocol. Holds the four cross-file rules (`no-phantom-type-param`, `no-duplicate-envelope-shape`, `no-shared-variant-literal-across-discriminated-unions`, `no-variant-prefix-drift`) plus the `recommended` config preset. |
+| `eslint-plugin/` | Bundled-local ESLint plugin shipped via `file:` protocol. Holds the three cross-file rules (`no-duplicate-envelope-shape`, `no-shared-variant-literal-across-discriminated-unions`, `no-variant-prefix-drift`) plus the `recommended` config preset. |
 | `lib/setup-eslint/init-eslint-orchestrator.js` | Entry point for `/setup-eslint`. Detects, installs, merges, scaffolds, prints summary. Idempotent + non-destructive. Flags: `--no-precommit`, `--dry-run`. |
 | `lib/setup-eslint/find-package-root.js` | Walks up from cwd to nearest `package.json`. |
 | `lib/setup-eslint/detect-package-manager.js` | Detects npm / pnpm / yarn / bun by lockfile, or `packageManager` field in `package.json`. |
