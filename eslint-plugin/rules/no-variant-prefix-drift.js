@@ -1,33 +1,7 @@
 'use strict';
 
-/**
- * no-variant-prefix-drift
- *
- * Cross-file rule. For every string literal that participates in a
- * discriminated union, splits on the trailing word boundary into
- * (prefix, suffix) using a CapitalCase split. Suffix is the operation
- * (e.g. "Left", "Died", "Disconnected"); prefix is the actor
- * (e.g. "Player", "Owner"). When sibling DUs disagree on the prefix for
- * the same suffix — e.g. `PlayerLeft` lives in one DU and `OwnerLeft`
- * in another, both meaning "the controller of this entity left" — flag
- * the drift.
- *
- * The tool can flag drift but cannot pick the canonical winner without
- * a domain glossary. The user must decide. The report names every
- * conflicting prefix and the DU each lives in.
- *
- * False positive avoidance: only flags within the SAME suffix vocabulary.
- * `Disconnected` (network) vs `Disconnect` (action) are different
- * suffixes; we don't fuzzy-match. The split rule: the suffix is the
- * trailing CapitalWord (one or more). Everything before is the prefix.
- * `PlayerLeft` -> prefix=`Player`, suffix=`Left`. `OwnerLeft` -> prefix
- * =`Owner`, suffix=`Left`. Same suffix, different prefix, different DU
- * = drift.
- */
-
-const SUFFIX_REGISTRY = new Map(); // suffix -> Map<prefix, [{file, owner, line, value}]>
-const CAPITAL_WORD_RE = /[A-Z][a-z0-9]+/g;
-const MIN_PREFIX_LEN = 1;
+const { createProjectDeclarationListener, collectStringVariants } = require('../lib/project-type-declarations');
+const { groupValuesByKey } = require('../lib/group-values-by-key');
 
 module.exports = {
   meta: {
@@ -50,79 +24,37 @@ module.exports = {
     },
   },
   create(context) {
-    const opts = context.options[0] || {};
-    const ignoreSuffixes = new Set(opts.ignoreSuffixes || []);
-
-    function recordVariant(value, ownerName, node) {
-      if (typeof value !== 'string') return;
-      const split = splitPrefixSuffix(value);
-      if (!split) return;
-      const { prefix, suffix } = split;
-      if (ignoreSuffixes.has(suffix)) return;
-
-      if (!SUFFIX_REGISTRY.has(suffix)) SUFFIX_REGISTRY.set(suffix, new Map());
-      const byPrefix = SUFFIX_REGISTRY.get(suffix);
-
-      const file = context.filename;
-      const line = node.loc ? node.loc.start.line : 0;
-
-      if (!byPrefix.has(prefix)) byPrefix.set(prefix, []);
-      const entries = byPrefix.get(prefix);
-      const dedupeKey = `${file}:${ownerName}`;
-      if (!entries.some(e => `${e.file}:${e.owner}` === dedupeKey)) {
-        entries.push({ file, owner: ownerName, line, value });
-      }
-
-      if (byPrefix.size >= 2) {
-        const conflicts = [];
-        for (const [p, es] of byPrefix) {
-          for (const e of es) {
-            conflicts.push(`${p}${suffix} in ${e.owner} (${shortPath(e.file)}:${e.line})`);
+    const options = context.options[0] || {};
+    const ignoreSuffixes = new Set(options.ignoreSuffixes || []);
+    return createProjectDeclarationListener({ context, inspectProject(project) {
+      const variants = project.declarations.flatMap((declaration) => {
+        switch (declaration.kind) {
+          case 'interface': return [];
+          case 'alias': {
+            const literals = collectStringVariants({ compiler: project.compiler, type: declaration.type, discriminatorNames: new Set() });
+            return [...new Set(literals)].flatMap((value) => {
+              const words = value.match(/[A-Z][a-z0-9]+/g);
+              if (!words || words.length < 2) return [];
+              const suffix = words[words.length - 1];
+              const prefix = words.slice(0, -1).join('');
+              if (ignoreSuffixes.has(suffix)) return [];
+              return [{ declaration, value, prefix, suffix }];
+            });
           }
         }
-        context.report({
-          node,
-          messageId: 'drift',
-          data: {
-            value: JSON.stringify(value),
-            suffix,
-            conflicts: conflicts.join(', '),
-          },
-        });
+      });
+      const groups = groupValuesByKey({ values: variants, key: (variant) => variant.suffix });
+      for (const [suffix, entries] of groups) {
+        for (const entry of entries) {
+          if (entry.declaration.file !== project.localFile) continue;
+          const partners = entries.filter((partner) => partner.declaration !== entry.declaration && partner.prefix !== entry.prefix);
+          if (partners.length === 0) continue;
+          const conflicts = entries.map((partner) => `${partner.value} in ${partner.declaration.name} (${partner.declaration.relativePath}:${partner.declaration.line})`).join(', ');
+          context.report({ loc: entry.declaration.loc, messageId: 'drift', data: {
+            value: JSON.stringify(entry.value), suffix, conflicts,
+          } });
+        }
       }
-    }
-
-    function visitTypeNode(typeNode, ownerName, ownerNode) {
-      if (!typeNode) return;
-      if (typeNode.type === 'TSUnionType') {
-        for (const m of typeNode.types) visitTypeNode(m, ownerName, ownerNode);
-        return;
-      }
-      if (typeNode.type === 'TSLiteralType' && typeNode.literal && typeof typeNode.literal.value === 'string') {
-        recordVariant(typeNode.literal.value, ownerName, ownerNode);
-      }
-    }
-
-    return {
-      TSTypeAliasDeclaration(node) {
-        visitTypeNode(node.typeAnnotation, node.id.name, node);
-      },
-    };
+    } });
   },
 };
-
-function splitPrefixSuffix(value) {
-  if (!value) return null;
-  const words = value.match(CAPITAL_WORD_RE);
-  if (!words || words.length < 2) return null;
-  const suffix = words[words.length - 1];
-  const prefix = words.slice(0, -1).join('');
-  if (prefix.length < MIN_PREFIX_LEN) return null;
-  return { prefix, suffix };
-}
-
-function shortPath(absPath) {
-  if (!absPath) return '?';
-  const idx = absPath.lastIndexOf('/');
-  return idx === -1 ? absPath : absPath.slice(idx + 1);
-}
