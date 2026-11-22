@@ -41,25 +41,32 @@ Then add to your `opencode.json`:
 npx skills add CheckPickerUpper/perfect-typescripter
 ```
 
-### ESLint plugin (cross-file rules)
+### Cross-file rules (Bun or ESLint)
+
+From your TypeScript project's root, beside its `tsconfig.json`:
 
 ```bash
-git clone https://github.com/CheckPickerUpper/perfect-typescripter
-npm install --save-dev file:./perfect-typescripter/eslint-plugin
+git clone https://github.com/CheckPickerUpper/perfect-typescripter.git ../perfect-typescripter
+npm install --save-dev eslint@latest @typescript-eslint/parser@latest \
+  file:../perfect-typescripter/eslint-plugin \
+  'typescript@npm:@typescript/typescript6@latest' \
+  '@typescript/cli@npm:typescript@latest'
 ```
 
-Or run `/setup-eslint` inside Claude Code to scaffold ESLint config, parser, and pre-commit in one pass.
+The npm dependencies require Node.js `^20.19.0 || ^22.13.0 || >=24`. For TypeScript 7 projects, the aliases keep the TypeScript 6 JavaScript API available as `typescript` for the parser and cross-file rules, while `npx tsc` runs the native TypeScript 7 compiler. This follows [TypeScript's side-by-side installation approach](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/#running-side-by-side-with-typescript-6-0).
 
-For full per-surface install detail (project config, custom flags, npm-publish status), jump to [Install (full)](#install-full).
+Add the [Bun lint configuration](#bun-lint) or the [ESLint configuration](#eslint) below. In Claude Code, `/setup-eslint` can also install the dependencies, configure ESLint, and add a pre-commit hook.
+
+For runtime options and configuration, see [Install (full)](#install-full).
 
 ## What you get
 
 | Artifact | Catches | Where it lives |
 |---|---|---|
 | Claude Code / Codex / OpenCode plugin | *The file you are writing*. PreToolUse `Write` / `Edit` hooks block the bad shapes before they land on disk. | this repo's root |
-| `eslint-plugin-perfect-typescripter` | *Patterns that span files*: phantom type params, duplicate envelope shapes, shared variant literals across discriminated unions, variant prefix drift. | [`./eslint-plugin/`](./eslint-plugin/) |
+| `eslint-plugin-perfect-typescripter` for Bun lint or ESLint | *Patterns that span files*: duplicate envelope shapes, shared variant literals across discriminated unions, variant prefix drift. | [`./eslint-plugin/`](./eslint-plugin/) |
 
-Per-file hook plus cross-file ESLint closes the gap that either alone leaves open.
+The hooks check each agent edit. Bun lint or ESLint compares declarations across the TypeScript project.
 
 ## What gets blocked
 
@@ -93,15 +100,7 @@ The correct shape in each case is a discriminated union with a `Kind` field and 
 
 ## Install (full)
 
-The quickstart above gets you running. This section spells out per-surface options (project config, override flags, npm-publish status, etc) for users who need them.
-
-| Surface | Status | Quickstart command |
-|---|---|---|
-| Claude Code (plugin marketplace) | ✅ ready | `claude plugin marketplace add https://github.com/CheckPickerUpper/perfect-typescripter && claude plugin install perfect-typescripter@perfect-typescripter --scope user` |
-| Codex CLI | ✅ ready | `git clone https://github.com/CheckPickerUpper/perfect-typescripter ~/.codex/plugins/cache/perfect-typescripter/perfect-typescripter/local` (Codex auto-discovers `.codex-plugin/plugin.json`) |
-| OpenCode | ✅ ready | Clone, then add `"file:///.../.opencode/perfect-typescripter-opencode-bundle.js"` to `opencode.json` `plugin` array (or drop into `~/.config/opencode/plugins/`). See [OpenCode](#opencode) below. |
-| Skills CLI (skills.sh / `npx skills`) | ✅ ready | `npx skills add CheckPickerUpper/perfect-typescripter` |
-| npm (ESLint plugin only) | 🚧 not yet published | (planned: `npm install --save-dev eslint-plugin-perfect-typescripter` after first release) |
+This section covers runtime configuration and the cross-file lint rules.
 
 ### Claude Code (plugin marketplace)
 
@@ -154,35 +153,47 @@ npx skills add CheckPickerUpper/perfect-typescripter --list
 
 ⚠️ The skills install activation context only; they do not install the PreToolUse hooks. If you want the *write-time blocking* behavior, use the Claude Code marketplace install above. Use the skills CLI when you want the rule documentation loaded into a non-Claude-Code agent that respects SKILL.md frontmatter.
 
-### ESLint plugin (the cross-file rules)
+### Cross-file rules
 
-The cross-file rules ship as a sibling npm package, [`eslint-plugin-perfect-typescripter`](./eslint-plugin/). After the first npm release:
+After the [local package install](#cross-file-rules-bun-or-eslint), choose Bun lint or ESLint. For each linted `.ts`, `.tsx`, `.mts`, or `.cts` file, the rules read declarations from the nearest `tsconfig.json` project's file list. A single-file or staged lint can therefore report matching declarations in other project files. Only linted files receive diagnostics, with partner paths relative to the project root.
 
-```bash
-npm install --save-dev eslint-plugin-perfect-typescripter
+The selected file uses the text supplied by the linter, including an unsaved editor buffer. Bun's `--staged` selects paths staged in Git. Other project files are read from disk. Project membership and contents are refreshed on the next lint. See [Cross-file enforcement](docs/RULES.md#cross-file-enforcement) for rule options and setup diagnostics.
+
+#### Bun lint
+
+With Bun 1.4.4, add to `bunfig.toml`:
+
+```toml
+[lint]
+plugins = ["eslint-plugin-perfect-typescripter"]
+
+[lint.rules]
+"perfect-typescripter/no-duplicate-envelope-shape" = "error"
+"perfect-typescripter/no-shared-variant-literal-across-discriminated-unions" = "error"
+"perfect-typescripter/no-variant-prefix-drift" = "error"
 ```
 
-Until then, install via `file:` protocol against a clone:
+Lint a file or the staged TypeScript files:
 
 ```bash
-git clone https://github.com/CheckPickerUpper/perfect-typescripter.git
-npm install --save-dev file:./perfect-typescripter/eslint-plugin
+bun lint b.ts
+bun lint --staged
 ```
 
-Or wire the whole integration (parser, config, husky + lint-staged pre-commit) automatically from inside Claude Code with `/setup-eslint`; that command detects your package manager, existing ESLint config style, and current pre-commit setup, then scaffolds what is missing.
+#### ESLint
 
-Flat config:
+Create `eslint.config.mjs` with the TypeScript parser:
 
 ```js
-// eslint.config.js
+import tsParser from "@typescript-eslint/parser";
 import perfectTypescripter from "eslint-plugin-perfect-typescripter";
 
 export default [
   {
-    files: ["**/*.ts", "**/*.tsx"],
+    files: ["**/*.{ts,tsx,mts,cts}"],
+    languageOptions: { parser: tsParser },
     plugins: { "perfect-typescripter": perfectTypescripter },
     rules: {
-      "perfect-typescripter/no-phantom-type-param": "error",
       "perfect-typescripter/no-duplicate-envelope-shape": "error",
       "perfect-typescripter/no-shared-variant-literal-across-discriminated-unions": "error",
       "perfect-typescripter/no-variant-prefix-drift": "error",
@@ -191,19 +202,11 @@ export default [
 ];
 ```
 
-Legacy `.eslintrc.json`:
-
-```json
-{
-  "plugins": ["perfect-typescripter"],
-  "rules": {
-    "perfect-typescripter/no-phantom-type-param": "error",
-    "perfect-typescripter/no-duplicate-envelope-shape": "error",
-    "perfect-typescripter/no-shared-variant-literal-across-discriminated-unions": "error",
-    "perfect-typescripter/no-variant-prefix-drift": "error"
-  }
-}
+```bash
+npx eslint b.ts
 ```
+
+The plugin's `recommended` preset sets all three rules to `warn`. These examples use `error` to make findings fail the lint command. For unused type parameters, use [Bun's default TypeScript `no-unused-vars`](https://bun.com/docs/lint#default-rules), [`@typescript-eslint/no-unused-vars`](https://typescript-eslint.io/rules/no-unused-vars/), or the compiler's `noUnusedParameters`. `noUnusedLocals` checks unused local declarations.
 
 ### Codex CLI
 
@@ -217,7 +220,7 @@ git clone https://github.com/CheckPickerUpper/perfect-typescripter \
 
 Restart your Codex CLI session. The PreToolUse hook fires on `Edit`, `Write`, `MultiEdit`, and `apply_patch`; the SessionStart hook injects the rule headline.
 
-The pre-built artifacts live under `.generated/codex/`; they are checked in (un-gitignored) so installs work without a build step. Anyone changing the canonical hooks at `hooks/*.js` should rerun their preferred regeneration path (the upstream monorepo compiler today, a `tools/` script in the future); see [`CONTRIBUTING.md`](CONTRIBUTING.md).
+The plugin includes the generated files it needs, so installation requires no build step.
 
 ### OpenCode
 
@@ -261,22 +264,6 @@ python3 ~/perfect-typescripter/.opencode/install.py --dry-run   # preview
 python3 ~/perfect-typescripter/.opencode/install.py --mode copy # copy instead of symlink (Windows)
 ```
 
-**4. npm (planned).** After the first npm release the install will collapse to:
-
-```bash
-opencode plugin perfect-typescripter
-```
-
-which writes the entry into `opencode.json` and pulls from npm automatically.
-
-## Run the tests
-
-```bash
-npm test
-```
-
-There is no test framework dependency. The three suites are standalone Node scripts that spawn each hook as a child process and assert on stdout / stderr / exit code, so they double as integration tests for the hook IPC contract.
-
 ## Philosophy
 
 > Make illegal states unrepresentable.
@@ -290,10 +277,6 @@ Further reading:
 - [Making Illegal States Unrepresentable](https://ybogomolov.me/making-illegal-states-unrepresentable)
 - [Rust's Type System](https://doc.rust-lang.org/book/ch06-00-enums.html)
 - [Parse, Don't Validate](https://lexi-lambda.github.io/blog/2019/11/05/parse-don-t-validate/)
-
-## Contributing
-
-See [`CONTRIBUTING.md`](CONTRIBUTING.md) for how to add a new rule, run tests locally, and propose configuration changes.
 
 ## License
 

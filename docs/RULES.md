@@ -1,6 +1,6 @@
 # Perfect TypeScripter — Full Rule Reference
 
-This is the exhaustive catalogue of every rule the Claude Code plugin enforces, every config key, every example pair, and every troubleshooting note. For installation and a short orientation, see the top-level [README](../README.md).
+This reference covers the write-time hooks, cross-file lint rules, configuration, examples, and troubleshooting. For installation, see the [README](../README.md).
 
 ## The Problem
 
@@ -299,7 +299,7 @@ switch (transition.Kind) {
 
 The fix is to classify the relationship once into a named relationship DU, then switch on that relationship. If the downstream caller only runs effects, compile the rich transition into an actionable command shape before the side-effect runner.
 
-### Cross-file rules (v1.33.0)
+### Cross-file rules
 
 The per-file PreToolUse hook only sees one file at a time, so it cannot catch:
 
@@ -307,7 +307,7 @@ The per-file PreToolUse hook only sees one file at a time, so it cannot catch:
 - **Shared variant literals** across DUs (`OwnerLeft` appearing in `CharacterRemoveReason`, `SummonRemoveReason`, `CompanionRemoveReason`)
 - **Prefix drift** between sibling DUs (`PlayerLeft` vs `OwnerLeft` for the same domain operation)
 
-Those land as ESLint rules in `eslint-plugin-perfect-typescripter`, bundled under `eslint-plugin/` inside this Claude plugin and installed into the user's project by `/setup-eslint`. See the `## Cross-file enforcement` section below.
+These rules run in Bun lint or ESLint through `eslint-plugin-perfect-typescripter`. See [Cross-file enforcement](#cross-file-enforcement) for installation and configuration.
 
 ### String Widening of Literal Unions (v1.30.0)
 
@@ -693,58 +693,101 @@ if (result.status === "success") {
 - Object parameter
 - Type-safe at every step
 
-## Cross-file enforcement (v1.33.0)
+## Cross-file enforcement
 
-The three rules that need declarations from multiple files ship in the sibling ESLint plugin:
+`eslint-plugin-perfect-typescripter` runs the same three rules in Bun lint and ESLint:
 
 | Rule | What it catches |
 |------|-----------------|
-| `perfect-typescripter/no-duplicate-envelope-shape` | N or more type aliases / interfaces with identical field sets. The fix is a generic envelope. |
-| `perfect-typescripter/no-shared-variant-literal-across-discriminated-unions` | Same string-literal variant (`"OwnerLeft"`) in N or more separate DUs. Extract a shared cause type so adding a new variant later is one line, not N. |
-| `perfect-typescripter/no-variant-prefix-drift` | Sibling DUs disagree on the prefix for the same operational suffix (`PlayerLeft` in one DU, `OwnerLeft` in another). Flagged for human resolution; the tool cannot pick the canonical name without a domain glossary. |
+| `perfect-typescripter/no-duplicate-envelope-shape` | Two or more type aliases or interfaces with identical property names and types, with at least two properties. Extract a generic envelope. |
+| `perfect-typescripter/no-shared-variant-literal-across-discriminated-unions` | The same string literal in three or more separate union aliases, either as a bare variant or in a configured discriminator field. Extract a shared cause type. |
+| `perfect-typescripter/no-variant-prefix-drift` | Bare string variants in different aliases disagree on the prefix for the same PascalCase suffix (`PlayerLeft` versus `OwnerLeft`). Choose the name that matches the domain. |
 
-Remove `perfect-typescripter/no-phantom-type-param` from existing ESLint configs. Use the [unused-parameter checks described above](#phantom-type-parameter-v1330) for linting; the write-time phantom parameter hook still applies to agent edits.
+Remove `perfect-typescripter/no-phantom-type-param` from existing ESLint configs. Use the [unused-parameter checks described above](#phantom-type-parameter-v1330) for linting. The write-time phantom parameter hook still applies to agent edits.
 
-### Wire it into a project — proactive (default)
+### Project scope
 
-Setup is proactive as of 1.34.0. The skill `setup-eslint-integration` auto-loads when:
+For each linted `.ts`, `.tsx`, `.mts`, or `.cts` file, the rules search upwards from its directory for the nearest `tsconfig.json`. TypeScript's config parser resolves `files`, `include`, `exclude`, and `extends` to select the project files. Only declarations in that file list participate. Project references are not traversed.
 
-1. The project has `tsconfig.json` or `.ts` / `.tsx` files
-2. The project has no ESLint config (`eslint.config.*` or `.eslintrc.*`)
-3. The user is editing TS or asking about linting / cross-file rules
+Linting `b.ts` alone still reads matching declarations in `a.ts` and other project files. Findings belong to the linted file, so unlinted files do not gain diagnostics. Partner declarations appear in deterministic order with project-relative paths and line numbers.
 
-When those conditions hold, Claude spawns the `eslint-installer` agent without asking permission. The agent dry-runs the orchestrator, applies it, verifies with `npx eslint .`, and reports back. No slash command typing required.
+The linter's text is used for the selected file, including unsaved editor changes. Bun's `--staged` selects paths staged in Git. Partner files are read from disk. The next lint refreshes the file list and contents, so edits, renames, and config changes affect its findings.
 
-If the user objects ("stop suggesting eslint, I'll set it up myself"), the skill records the preference and stops firing for the session.
+### Installation
 
-### Wire it into a project — manual escape hatch
+Use the [README's local package installation](../README.md#cross-file-rules-bun-or-eslint) from the project root. It installs the plugin, ESLint, the TypeScript parser, and both TypeScript aliases. TypeScript 7's native compiler does not provide the JavaScript compiler API these rules need. `typescript@npm:@typescript/typescript6@latest` supplies that API, while `@typescript/cli@npm:typescript@latest` supplies the native `tsc` command. See [TypeScript's side-by-side installation instructions](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/#running-side-by-side-with-typescript-6-0).
 
-If you want to force setup explicitly (e.g. the skill heuristics decided to skip), run `/setup-eslint`. The slash command does the same thing as the agent. Use it when:
+In Claude Code, the `setup-eslint-integration` skill starts setup when a TypeScript project has no ESLint config and you edit TypeScript or ask about linting. `/setup-eslint` runs setup explicitly. It installs missing dependencies, configures ESLint, and scaffolds a pre-commit hook. Existing declared dependencies are kept. Check their compatibility if setup reports a compiler API or parser error. Use `--no-precommit` to configure linting alone.
 
-- You disabled the skill earlier in the session and changed your mind
-- You're scripting setup across multiple projects and want a one-liner
-- The skill conditions don't match (e.g. you want to set up ESLint in a non-TS project anyway)
+### Bun lint
 
-The orchestrator behind both entry points:
+With Bun 1.4.4, put this in `bunfig.toml`:
 
-1. Walks up to the nearest `package.json` and refuses if no Node project is found.
-2. Detects package manager (npm / pnpm / yarn / bun) from lockfile.
-3. Detects existing ESLint config style. Flat (`eslint.config.js / .mjs / .cjs / .ts`) wins; falls back to legacy (`.eslintrc.json / .eslintrc.js / .yaml`); creates a fresh flat config if neither exists.
-4. Installs `eslint`, `@typescript-eslint/parser`, `husky`, `lint-staged`, plus `eslint-plugin-perfect-typescripter` via the `file:` protocol pointing at the bundled plugin source. No npm publish pipeline needed.
-5. Merges rule entries into a legacy `.eslintrc.json`, or writes a fresh / sibling flat config (sibling because flat configs are JS and can be arbitrarily dynamic).
-6. Scaffolds husky + lint-staged so `eslint --max-warnings 0` runs on staged `.ts` / `.tsx` files at pre-commit. Skip with `--no-precommit`.
+```toml
+[lint]
+plugins = ["eslint-plugin-perfect-typescripter"]
 
-Cross-file rules are systematic only when ESLint runs in editor + pre-commit + CI. Editor squiggles alone are advisory. Step 6 is what makes pre-commit compulsory; the user adds the CI workflow themselves because hosts vary.
+[lint.rules]
+"perfect-typescripter/no-duplicate-envelope-shape" = "error"
+"perfect-typescripter/no-shared-variant-literal-across-discriminated-unions" = "error"
+"perfect-typescripter/no-variant-prefix-drift" = "error"
+```
 
-### Severity defaults
+```bash
+bun lint b.ts
+bun lint --staged
+```
 
-| Rule | Default severity |
-|------|------------------|
-| `no-duplicate-envelope-shape` | warn |
-| `no-shared-variant-literal-across-discriminated-unions` | warn |
-| `no-variant-prefix-drift` | warn |
+Both commands use the nearest tsconfig project's declarations, even when only `b.ts` is selected. See [Bun's lint documentation](https://bun.com/docs/lint) for command options.
 
-Override per project in your ESLint config.
+### ESLint
+
+Create `eslint.config.mjs`:
+
+```js
+import tsParser from "@typescript-eslint/parser";
+import perfectTypescripter from "eslint-plugin-perfect-typescripter";
+
+export default [
+  {
+    files: ["**/*.{ts,tsx,mts,cts}"],
+    languageOptions: { parser: tsParser },
+    plugins: { "perfect-typescripter": perfectTypescripter },
+    rules: {
+      "perfect-typescripter/no-duplicate-envelope-shape": "error",
+      "perfect-typescripter/no-shared-variant-literal-across-discriminated-unions": "error",
+      "perfect-typescripter/no-variant-prefix-drift": "error",
+    },
+  },
+];
+```
+
+```bash
+npx eslint b.ts
+```
+
+The `recommended` preset sets all three rules to `warn`. These examples use `error` so findings fail the lint command.
+
+### Rule options
+
+Pass an options object after the severity, for example `["error", { "threshold": 4 }]` in ESLint or `["error", { threshold = 4 }]` in TOML.
+
+| Rule | Options |
+|------|---------|
+| `no-duplicate-envelope-shape` | `threshold` (default `2`), `minFields` (default `2`), `ignoreNames` (declaration names, default `[]`). |
+| `no-shared-variant-literal-across-discriminated-unions` | `threshold` (default `3`), `ignoreLiterals` (default `[]`), `discriminatorFieldNames` (default `["kind", "Kind", "tag", "Tag", "type", "Type"]`). |
+| `no-variant-prefix-drift` | `ignoreSuffixes` (default `[]`). |
+
+### Setup diagnostics
+
+Each enabled rule reports setup problems at the start of the linted TypeScript file. JavaScript files do not trigger project setup diagnostics.
+
+| Problem | Diagnostic details |
+|---------|--------------------|
+| Missing `tsconfig.json` | The starting directory and every config path searched upwards. |
+| Missing or incompatible project-local `typescript` | The project root or resolved module path, the load failure or missing API members, and the compatibility install command. |
+| Invalid TypeScript config | The config path and TypeScript diagnostic code and message, including the source file, line, and column when available. |
+| Unreadable config or project file | The file path, I/O error code, and original cause. Other readable project files can still be analyzed when a partner file is unreadable. |
 
 ## Files
 
@@ -764,7 +807,7 @@ Override per project in your ESLint config.
 | `lib/setup-eslint/find-package-root.js` | Walks up from cwd to nearest `package.json`. |
 | `lib/setup-eslint/detect-package-manager.js` | Detects npm / pnpm / yarn / bun by lockfile, or `packageManager` field in `package.json`. |
 | `lib/setup-eslint/detect-eslint-config-style.js` | Detects flat / legacy / none ESLint config in the project root. |
-| `lib/setup-eslint/install-eslint-dependencies.js` | Installs `eslint`, `@typescript-eslint/parser`, `husky`, `lint-staged`, and the bundled plugin via `file:` protocol. Idempotent. |
+| `lib/setup-eslint/install-eslint-dependencies.js` | Fresh installs include ESLint, the TypeScript parser, TypeScript API and native compiler aliases, husky, lint-staged, and the local plugin. Existing declared dependencies are kept. |
 | `lib/setup-eslint/merge-flat-eslint-config.js` | Writes a fresh `eslint.config.js` if none exists, or a sibling `eslint.config.perfect-typescripter.js` if one does (refuses to AST-rewrite a JS export that may be dynamic). |
 | `lib/setup-eslint/merge-legacy-eslint-config.js` | Merges rules into `.eslintrc.json` (JSON path only). For `.eslintrc.js` / `.cjs` / `.yaml`, prints a manual block instead of pretending to rewrite. |
 | `lib/setup-eslint/scaffold-precommit-eslint-hook.js` | Scaffolds husky + lint-staged so `eslint --max-warnings 0` runs on staged `.ts` / `.tsx` at pre-commit. |

@@ -23,20 +23,25 @@ commands/                  Slash commands.
 config/default.json        Built-in rule defaults; project config is merged on top.
 
 eslint-plugin/             The npm-publishable cross-file plugin.
+  lib/                     Project declarations and grouping shared by the rules.
   rules/                   One file per rule.
   index.js                 Rule registry.
 
-test/                      Self-contained Node scripts. No test framework.
+test/                      Hook IPC tests and Node's built-in test runner.
 docs/RULES.md              Full per-rule documentation.
 ```
 
 ## Run the tests
 
 ```bash
+npm ci
 npm test
+npm run test:bun-lint
 ```
 
-All three suites are standalone Node scripts: they spawn each hook as a child process via `child_process.spawnSync`, pipe a synthetic `tool_input` payload to stdin, then assert on stdout / stderr / exit code. No `jest`, no `vitest`, no `mocha`. That sounds austere, but the reason is structural: the hooks are themselves child processes invoked by Claude Code with a JSON IPC contract, and the test invocation mirrors that exact call shape, so the tests double as integration coverage for the IPC contract. A test framework would add a transitive dependency without making any assertion clearer; if someone proposes adding one, the burden is on showing what bug it would have caught.
+`npm test` runs the three hook IPC suites and `test/cross-file-rules.test.js`. The hook tests invoke the real hook processes with JSON input and assert on their output and exit codes. The cross-file suite uses ESLint's API in process against tiny TypeScript projects, including single-file linting, changed partner declarations, and config failures.
+
+`npm run test:bun-lint` separately proves Bun's plugin loader with one `bun lint` process. The documented Bun commands were verified on Bun 1.4.4. The tests use Node's built-in assertions and test runner. There is no test framework dependency. To run only the ESLint project regressions, use `npm run test:cross-file`.
 
 ## Adding a new per-file rule
 
@@ -60,11 +65,15 @@ A per-file rule blocks a TypeScript shape in the file being written or edited. I
 A cross-file rule sees the whole project, not one file. It lives in `eslint-plugin/rules/`.
 
 1. Pick a kebab-case rule name (e.g. `no-shared-variant-literal-across-discriminated-unions`).
-2. Implement the rule in `eslint-plugin/rules/<name>.js`. Follow ESLint's rule API.
+2. Implement the rule in `eslint-plugin/rules/<name>.js`. Use `createProjectDeclarationListener` from `eslint-plugin/lib/project-type-declarations.js` to read the nearest tsconfig project and report setup errors.
 3. Register the rule in `eslint-plugin/index.js`.
 4. Bump `version` in `eslint-plugin/package.json`.
 5. Document the rule in `docs/RULES.md`.
-6. Add an example fixture and assertion (cross-file rules are harder to test in isolation; the recommended approach is to run ESLint against a fixture directory with two related files).
+6. Add regressions in `test/cross-file-rules.test.js` using the shared TypeScript project fixture and ESLint's API. Prove single-file findings, lint-order independence, and refreshed findings after partner contents change in the same process. Keep the Bun subprocess test focused on the loader boundary.
+
+## Generated plugin files
+
+The checked-in `.generated/codex/` files are installation outputs. Change the canonical hooks, skills, commands, or `plugin.toml`, then regenerate the affected outputs with the upstream plugin compiler. That compiler is not included in this checkout. `plugin.toml` records the upstream manifest command.
 
 ## Adding an exemption rather than a rule change
 
